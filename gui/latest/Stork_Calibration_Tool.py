@@ -1432,8 +1432,16 @@ class StorkCalibrationTool:
                 fd, tmp = tempfile.mkstemp(suffix=".py", dir=script_dir)
                 with os.fdopen(fd, "wb") as fh:
                     fh.write(payload)
+                backup = None
                 if os.path.exists(dest):
-                    shutil.copy2(dest, dest + ".bak")
+                    # Keep the outgoing version as a versioned copy, e.g.
+                    # Stork_Calibration_Tool_v1.2.5.py, rather than a single
+                    # .bak that gets overwritten each update.  The outgoing
+                    # version is the one this running instance reports.
+                    old_ver = APP_VERSION.lstrip("vV")
+                    base = os.path.splitext(dest)[0]
+                    backup = f"{base}_v{old_ver}.py"
+                    shutil.copy2(dest, backup)
                 shutil.move(tmp, dest)
             except Exception as e:
                 self.root.after(0, lambda e=e: messagebox.showerror(
@@ -1442,17 +1450,23 @@ class StorkCalibrationTool:
                     f"saved to:\n{script_dir}\n\n{e}"))
                 return
 
-            self.root.after(0, lambda: self._update_installed(version, dest))
+            self.root.after(0, lambda: self._update_installed(
+                version, dest, backup))
 
         threading.Thread(target=work, daemon=True).start()
 
-    def _update_installed(self, version, dest):
+    def _update_installed(self, version, dest, backup=None):
         """Report a verified, installed update and offer to relaunch."""
+        if backup:
+            backup_note = ("The previous version was kept alongside it as:\n"
+                           f"{os.path.basename(backup)}\n\n")
+        else:
+            backup_note = ""
         if messagebox.askyesno(
                 "Update Installed",
                 f"Version {version} was downloaded, its checksum verified, "
                 f"and saved to:\n{dest}\n\n"
-                "A backup of the previous file was kept alongside it (.bak).\n\n"
+                f"{backup_note}"
                 "Restart the tool now to run the new version?"):
             try:
                 subprocess.Popen([sys.executable, dest])
