@@ -81,7 +81,7 @@ except Exception:
 # ==================================================================
 APP_COMPANY = "Stork Solutions"
 APP_PRODUCT = "Aquatics Series Calibration Suite"
-APP_VERSION = "V1.2.3"
+APP_VERSION = "V1.2.4"
 # Full title used for the OS window title-bar and the on-screen header banner.
 APP_TITLE = f"{APP_COMPANY} {APP_PRODUCT}"
 # One-line string shown in the Settings dialog footer.
@@ -133,6 +133,8 @@ MENSOR_QUERY_CHAN = "OUTP:CHAN?"       # read back the currently active channel
 # unit back, and STILL keeps the read-unit-and-convert safety net (_UNIT_TO_PA)
 # so that even if a controller is left in bar the calibration math is correct
 # and it can never command "1.0" as 1 bar (~10 mWG) when 1 mWG was meant.
+MENSOR_SET_MODE_GAUGE = "SENS:PRES:MODE GAUGE"   # set datum to gauge (not absolute)
+MENSOR_QUERY_MODE = "SENS:PRES:MODE?"    # query datum: returns "GAUGE" or "ABSOLUTE"
 MENSOR_UNIT_INDEX_MWG = "UNIT:INDEX 36"   # index 36 = mH2O (4 degC) == mWG
 MENSOR_UNIT_MWG = MENSOR_UNIT_INDEX_MWG   # (back-compat alias)
 MENSOR_QUERY_UNIT = "UNIT:PRES?"          # query the active pressure unit string
@@ -1758,6 +1760,7 @@ class StorkCalibrationTool:
             with link.lock:
                 link.select_channel(ch)          # OUTP:CHAN A / B
                 active = link.query(MENSOR_QUERY_CHAN)   # read it back
+                datum = link.query(MENSOR_QUERY_MODE)    # read gauge/absolute
                 err = link.read_error()
                 pres = link.query(MENSOR_MEASURE)
             link.close()
@@ -1777,6 +1780,9 @@ class StorkCalibrationTool:
             lines.append(f"*IDN? -> {idn or '(no reply)'}")
             lines.append(f"Requested channel: {ch}")
             lines.append(f"OUTP:CHAN? -> {active or '(no reply)'}")
+            datum_clean = (datum or "").strip().strip('"').upper()
+            datum_icon = "\u2713" if datum_clean == "GAUGE" else "\u26a0"
+            lines.append(f"SENS:PRES:MODE? -> {datum or '(no reply)'} {datum_icon}")
             lines.append(f"MEAS:PRES? -> {pres or '(no reply)'}")
             # Detect the pressure unit from the MEAS:PRES? suffix and show how
             # the tool will handle it, so the operator can confirm before cal.
@@ -3864,13 +3870,17 @@ class StorkCalibrationTool:
         with self.mensor.lock:
             self.mensor.clear_errors()
             self.mensor.select_channel(ch)      # OUTP:CHAN A / B (letter)
+            # CRITICAL: set datum to GAUGE (not absolute) - aquatics sensors are
+            # always calibrated in gauge mode. If the Mensor was left in absolute
+            # mode from a previous session, this ensures correct pressure type.
+            self.mensor.write(MENSOR_SET_MODE_GAUGE)    # SENS:PRES:MODE GAUGE
             chan_err = self.mensor.read_error()
         if chan_err:
             ui(f"\u26a0 Mensor reported '{chan_err}' after CHAN {ch}. "
                "Check the channel is installed/enabled and that the remote "
                "command set is 'WIKA SCPI'.\n", colour=AMBER)
         else:
-            ui(f"Selected Mensor channel {ch}.\n")
+            ui(f"Selected Mensor channel {ch}, datum set to GAUGE.\n")
 
         if use_bench:
             if self.keysight.connect(self.cfg["keysight_ip"],

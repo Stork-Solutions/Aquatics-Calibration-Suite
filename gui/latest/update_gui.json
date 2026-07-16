@@ -1,10 +1,10 @@
 {
     "product": "Stork Solutions Aquatics Series Calibration Suite",
-    "version": "V1.2.3",
+    "version": "V1.2.4",
     "release_date": "2026-07-16",
     "filename": "Stork_Calibration_Tool.py",
     "download_url": "https://raw.githubusercontent.com/Stork-Solutions/Aquatics-Calibration-Suite/main/gui/latest/Stork_Calibration_Tool.py",
-    "sha256": "83b8ed0161c78ad17860e185804ba74793d028444b8c46d0fe3cefe4f0545aab",
+    "sha256": "0de4028a02b8880d17b72daa3e3c90b8c5c4cc9bedbc1e7b3c176a1d792b2ca3",
     "mandatory": false,
-    "release_notes": "Manifest-based, SHA-256-verified self-update. Hardcoded repo; Check for Updates is a single button."
+    "release_notes": "Critical fix: force Mensor datum to GAUGE mode at calibration start (aquatics sensors always calibrated gauge, not absolute). Test Mensor now shows current datum mode."
 }
