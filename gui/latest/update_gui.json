@@ -2,9 +2,9 @@
     "product": "Stork Solutions Aquatics Series Calibration Suite",
     "version": "V1.2.3",
     "release_date": "2026-07-16",
-    "filename": "Stork_Calibration_Tool_v1.2.3.py",
-    "download_url": "https://raw.githubusercontent.com/Stork-Solutions/Aquatics-Calibration-Suite/main/gui/latest/Stork_Calibration_Tool_v1.2.3.py",
+    "filename": "Stork_Calibration_Tool.py",
+    "download_url": "https://raw.githubusercontent.com/Stork-Solutions/Aquatics-Calibration-Suite/main/gui/latest/Stork_Calibration_Tool.py",
     "sha256": "83b8ed0161c78ad17860e185804ba74793d028444b8c46d0fe3cefe4f0545aab",
     "mandatory": false,
-    "release_notes": "Manifest-based, SHA-256-verified self-update. Hardcoded repo; Check for Updates is now a single button."
+    "release_notes": "Manifest-based, SHA-256-verified self-update. Hardcoded repo; Check for Updates is a single button."
 }
