@@ -1,4 +1,4 @@
-# Stork Solutions Ltd Aquatics Series Calibration Suite V1.2.1
+# Stork Solutions Ltd Aquatics Series Calibration Suite
 # (product name / version live in APP_* constants below - edit them there)
 # Supports: pH Sensor, TDS Sensor & Level Sensor (ME782 / MPM288DI)
 # Transports: Serial (USB / RS485 RTU - pH/TDS)  |  Serial (Level ASCII - ME782 USB)
@@ -81,7 +81,7 @@ except Exception:
 # ==================================================================
 APP_COMPANY = "Stork Solutions"
 APP_PRODUCT = "Aquatics Series Calibration Suite"
-APP_VERSION = "V1.2.4"
+APP_VERSION = "V1.2.5"
 # Full title used for the OS window title-bar and the on-screen header banner.
 APP_TITLE = f"{APP_COMPANY} {APP_PRODUCT}"
 # One-line string shown in the Settings dialog footer.
@@ -204,11 +204,7 @@ LEVEL_RANGE_OPTIONS = ("0.5 mWG", "1 mWG", "3 mWG", "5 mWG")
 # Calibration point sequences (percentages of full scale).
 LEVEL_SEQUENCES = {
     "5-point (0-50-100-50-0 %)": [0, 50, 100, 50, 0],
-    "9-point (0-25-50-75-100-75-50-25-0 %)":
-        [0, 25, 50, 75, 100, 75, 50, 25, 0],
     "3-point (0-50-100 %)": [0, 50, 100],
-    "11-point (0-20-40-60-80-100 down %)":
-        [0, 20, 40, 60, 80, 100, 80, 60, 40, 20, 0],
 }
 
 
@@ -965,7 +961,13 @@ class StorkCalibrationTool:
                      padding=(24, 10), font=("Segoe UI", 11, "bold"))
         st.map("TNotebook.Tab",
                background=[("selected", highlight)],
-               foreground=[("selected", "#ffffff")])
+               foreground=[("selected", "#ffffff")],
+               # clam grows the selected tab by default (expand [1,1,1,0]),
+               # which makes the other tabs look like they shrink.  Force the
+               # expand to zero for every state so tabs keep a constant size.
+               expand=[("selected", [0, 0, 0, 0]),
+                       ("active", [0, 0, 0, 0]),
+                       ("!selected", [0, 0, 0, 0])])
 
         # treeview
         st.configure("Treeview", background=tree_bg, fieldbackground=tree_bg,
@@ -4463,23 +4465,28 @@ class StorkCalibrationTool:
     #   IDENTITY / SETUP TAB
     # ==============================================================
     def _build_identity_tab(self):
-        """Build the Identity / Setup tab for reading/writing sensor identity to flash."""
-        parent = self.identity_tab
+        """Build the Identity / Setup tab for reading/writing sensor identity to flash.
 
-        # Main container with padding
-        main_frame = tk.Frame(parent, bg=BG_DARK)
-        main_frame.pack(fill="both", expand=True, padx=20, pady=20)
+        Structured like the other tabs: a themed page background (the hand image)
+        is installed behind the page, and every card is registered as a frosted-
+        glass panel so the image shows through the gutters - matching pH / TDS /
+        Level.  No opaque full-page frame is used (that is what previously hid
+        the background)."""
+        page = self.identity_tab
+        self._install_page_bg(page, "identity")
 
-        # Title
-        title = tk.Label(main_frame, text="Sensor Identity & Setup",
+        # Title (sits directly on the page, like a section header)
+        title = tk.Label(page, text="Sensor Identity & Setup",
                     font=("Segoe UI", 14, "bold"), bg=BG_DARK, fg=TEXT)
-        title.pack(anchor="w", pady=(0, 15))
+        title.pack(anchor="w", padx=40, pady=(30, 12))
 
-        # Read-only info frame
-        info_frame = tk.LabelFrame(main_frame, text="Current Identity (Read-Only)",
+        # ---- Read-only info card (frosted glass) ----
+        info_frame = tk.LabelFrame(page, text=" Current Identity (Read-Only) ",
                     font=("Segoe UI", 10, "bold"),
-                    bg=BG_PANEL, fg=HIGHLIGHT, bd=2, relief="groove")
-        info_frame.pack(fill="x", pady=(0, 15))
+                    bg=BG_PANEL, fg=HIGHLIGHT, bd=2, relief="groove",
+                    labelanchor="nw", padx=2, pady=2)
+        info_frame.pack(fill="x", padx=40, pady=(0, 14))
+        self._register_frost_card(info_frame, "identity")
 
         # Device ID
         tk.Label(info_frame, text="Device ID:", bg=BG_PANEL, fg=TEXT,
@@ -4516,11 +4523,13 @@ class StorkCalibrationTool:
         tk.Label(info_frame, textvariable=self.identity_model_var, bg=BG_PANEL, fg="#00D9FF",
                 font=("Courier", 9, "bold")).grid(row=4, column=1, sticky="w", padx=10, pady=5)
 
-        # Editable fields frame
-        edit_frame = tk.LabelFrame(main_frame, text="Write New Identity",
+        # ---- Editable fields card (frosted glass) ----
+        edit_frame = tk.LabelFrame(page, text=" Write New Identity ",
                     font=("Segoe UI", 10, "bold"),
-                    bg=BG_PANEL, fg=HIGHLIGHT, bd=2, relief="groove")
-        edit_frame.pack(fill="x", pady=(0, 15))
+                    bg=BG_PANEL, fg=HIGHLIGHT, bd=2, relief="groove",
+                    labelanchor="nw", padx=2, pady=2)
+        edit_frame.pack(fill="x", padx=40, pady=(0, 14))
+        self._register_frost_card(edit_frame, "identity")
 
         # Serial Number entry
         tk.Label(edit_frame, text="Serial Number:", bg=BG_PANEL, fg=TEXT,
@@ -4539,9 +4548,9 @@ class StorkCalibrationTool:
                     state="readonly", width=18)
         type_combo.grid(row=1, column=1, sticky="w", padx=10, pady=8)
 
-        # Buttons frame
-        btn_frame = tk.Frame(main_frame, bg=BG_DARK)
-        btn_frame.pack(fill="x", pady=(0, 15))
+        # Buttons row (inside the edit card, so it stays on frosted glass)
+        btn_frame = tk.Frame(edit_frame, bg=BG_PANEL)
+        btn_frame.grid(row=2, column=0, columnspan=2, sticky="w", padx=8, pady=(4, 10))
 
         tk.Button(btn_frame, text="Read Identity (RX801)", command=self._identity_read,
                  font=("Segoe UI", 9, "bold"), bg=BLUE_BTN, fg="#ffffff", relief="flat",
@@ -4558,11 +4567,13 @@ class StorkCalibrationTool:
                  activebackground="#c87f0a", activeforeground="#ffffff",
                  cursor="hand2", padx=15, pady=8).pack(side="left", padx=5)
 
-        # Status display
-        status_frame = tk.LabelFrame(main_frame, text="Status / Messages",
+        # ---- Status display card (frosted glass) ----
+        status_frame = tk.LabelFrame(page, text=" Status / Messages ",
                     font=("Segoe UI", 10, "bold"),
-                    bg=BG_PANEL, fg=HIGHLIGHT, bd=2, relief="groove")
-        status_frame.pack(fill="both", expand=True)
+                    bg=BG_PANEL, fg=HIGHLIGHT, bd=2, relief="groove",
+                    labelanchor="nw", padx=2, pady=2)
+        status_frame.pack(fill="both", expand=True, padx=40, pady=(0, 30))
+        self._register_frost_card(status_frame, "identity")
 
         self.identity_status_text = tk.Text(status_frame, height=8, font=("Courier", 9),
                     bg=TREE_BG, fg=GREEN, wrap="word",
